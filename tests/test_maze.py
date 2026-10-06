@@ -1,14 +1,4 @@
-import json
-from pathlib import Path
-
-from maze3d_server.maze import DOWN, LEFT, MOVES, RIGHT, UP, make_maze, make_maze_3d, step
-
-
-def test_same_mazes_as_endless_maze():
-    """The 2D mazes match the ones Endless Maze's maze.js makes (scripts/endless_maze_fixture.js)."""
-    expected = json.loads((Path(__file__).parent / "fixtures" / "endless_maze.json").read_text())
-    for level, open_ in expected.items():
-        assert make_maze(int(level)).open == open_, f"level {level}"
+from maze3d_server.maze import DOWN, LEFT, MOVES, RIGHT, UP, make_maze, step
 
 
 def reachable(maze):
@@ -23,9 +13,9 @@ def reachable(maze):
     return seen
 
 
-def test_3d_mazes_are_whole_consistent_and_have_loops():
+def test_mazes_are_whole_consistent_have_loops_and_never_change():
     for level in (1, 5, 30):
-        maze = make_maze_3d(level)
+        maze = make_maze(level)
         n = maze.size
         assert len(reachable(maze)) == n * n
         for cell, bits in enumerate(maze.open):
@@ -36,4 +26,4 @@ def test_3d_mazes_are_whole_consistent_and_have_loops():
                 assert y < n - 1 and maze.open[cell + n] & UP
         passages = sum(bin(b).count("1") for b in maze.open) // 2
         assert passages > n * n - 1  # more passages than a maze with no loops
-        assert maze.open != make_maze(level).open[: n * n]
+        assert make_maze(level).open == maze.open

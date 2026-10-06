@@ -7,24 +7,23 @@ The play page and the server talk over one WebSocket at `/ws` (relative to the s
 | Message                       | When                                                                        |
 | ----------------------------- | --------------------------------------------------------------------------- |
 | `{t: "hello", guest}`         | First. `guest` is the stored guest ID (32 hex digits), or null for a new one |
-| `{t: "move", m}`              | A flat move, `m` one of `U R D L`; the server ignores moves into walls      |
-| `{t: "at", x, y, h}`          | In the 3D maze, where the player is, up to 15 times a second when it changes |
+| `{t: "start"}`                | Start pressed                                                               |
+| `{t: "at", x, y, h}`          | Where the player is, up to 15 times a second when it changes                |
 
 ## From the server
 
 | Message                                       | Meaning                                                           |
 | --------------------------------------------- | ----------------------------------------------------------------- |
 | `{t: "hello", id, guest, name}`               | This connection's ID, the guest ID to store, the name shown       |
-| `{t: "level", level, maze2d, maze3d, best}`   | Now on this level; `best` is `{ms, name}` or null                 |
-| `{t: "phase", phase: "2d", cell}`             | At the start of the flat maze, clock at zero                      |
-| `{t: "phase", phase: "falling", seconds}`     | Through the trap door                                             |
-| `{t: "phase", phase: "3d", x, y, h}`          | Landed in the 3D maze here                                        |
-| `{t: "phase", phase: "caught", seconds}`      | The monster got them; then `2d` again                             |
+| `{t: "level", level, maze, best}`             | Now on this level; `best` is `{ms, name}` or null                 |
+| `{t: "phase", phase: "ready"}`                | At the Start screen, clock at zero                                |
+| `{t: "phase", phase: "play", x, y, h}`        | Started: standing here, clock running, monster hunting            |
+| `{t: "phase", phase: "caught", seconds}`      | The monster got them; then `ready` again                          |
 | `{t: "phase", phase: "finished", ms, record, best, seconds}` | Reached the goal; then `level` for the next one    |
 | `{t: "state", clock, players, monster, here}` | 20 times a second; see below                              |
 | `{t: "snap", x, y, h}`                        | The last `at` was impossible; the player is back here             |
 
-A `state` message has the clock in ms (null before the first move), the players in the 3D maze as `[{id, name, x, y, h}]`, the monster as `{x, y}`, and `here`, how many people are on the level.
+A `state` message has the clock in ms (null before Start), the players who have started as `[{id, name, x, y, h}]`, the monster as `{x, y}`, and `here`, how many people are on the level.
 
 ## Checking moves
 

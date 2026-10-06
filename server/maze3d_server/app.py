@@ -92,8 +92,8 @@ def summary():
 
 @app.websocket("/ws")
 async def play(ws: WebSocket):
-    """The browser first sends {"t": "hello", "guest": <its guest ID or nothing>}; after that, 2D moves
-    ({"t": "move", "m": "U"}) and 3D positions ({"t": "at", "x", "y", "h"}). See specs/protocol.md."""
+    """The browser first sends {"t": "hello", "guest": <its guest ID or nothing>}; after that, Start
+    ({"t": "start"}) and positions ({"t": "at", "x", "y", "h"}). See specs/protocol.md."""
     await ws.accept()
     outbox: asyncio.Queue = asyncio.Queue()
     player = None
@@ -117,8 +117,8 @@ async def play(ws: WebSocket):
                 if not isinstance(guest, str) or not re.fullmatch(r"[0-9a-f]{32}", guest):
                     guest = secrets.token_hex(16)
                 player = game.join(secrets.token_hex(4), guest, outbox.put_nowait, now)
-            elif kind == "move" and message.get("m") in ("U", "R", "D", "L"):
-                game.move2d(player, message["m"], now)
+            elif kind == "start":
+                game.start(player, now)
             elif kind == "at":
                 try:
                     x, y, h = float(message["x"]), float(message["y"]), int(message["h"])

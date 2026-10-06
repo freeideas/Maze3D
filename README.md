@@ -2,16 +2,17 @@
 
 A fast maze game for several players at once, at **<https://maze3d.endlessmind.com/>**.
 
-It starts out looking just like [Endless Maze](https://maze.endlessmind.com/), a flat maze seen from above. Two moves in, the floor gives way: "You just fell through a trap door!" Now you are inside a 3D maze, seen through your own eyes, with other players and a monster. Reach the glowing square to go up a level. If the monster touches you, you start the level over, flat maze and all, with the clock back at zero.
+Press Start and you see the whole level from above, drawn like [Endless Maze](https://maze.endlessmind.com/): you are an arrow, other players are white dots, the monster is a red glow, and the goal is a yellow star. The clock is already running and the monster can already see you. Your first move swoops you down into the maze, seen through your own eyes. Reach the star to go up a level. If the monster touches you, you start the level over, with the clock back at zero.
 
 - **Other players** share your level's maze. You can run right through each other.
 - **The monster** starts at the goal and comes for the nearest player. It sees through walls, but it is not clever, and you are a little faster than it is. No one can pass it.
-- **Sound tells you where it is.** In headphones you hear it on the left or the right, and muffled when it is behind you. A heartbeat speeds up as it gets close.
+- **Sound tells you where it is.** It breathes, growls, and roars when it is close. In headphones you hear it on the left or the right, and muffled when it is behind you. A heartbeat speeds up as it gets close.
+- **The map** comes back whenever you stop (space, or a tap), but the clock and the monster keep going while you look.
 - **Best times** for every level are on the welcome page.
 
 ## Controls
 
-On a computer: arrow keys or W A S D. On a phone: swipe anywhere. In the flat maze, directions are on the screen. Inside the 3D maze they are your own: up is always straight ahead, left and right turn you that way and keep going, and down turns you around. Tap or press space to stop.
+On a computer: arrow keys or W A S D. On a phone: swipe anywhere. Directions are your own, the way your arrow points: up is straight ahead, left and right turn you that way and keep going, and down turns you around. Space or a tap stops and shows the map; another goes on.
 
 ## How it is made
 
@@ -20,11 +21,11 @@ One Python program runs the whole game, forever: it serves the pages and keeps a
 ```text
 app/
   welcome/     what the game is, Play, best times
-  play/        the game: the flat start, the 3D maze (three.js), sound, controls
+  play/        the game: Start, the map, the 3D maze (three.js), sound, controls
   vendor/      three.js, pinned (vendor/README.md)
 server/maze3d_server/
-  maze.py      the mazes: Endless Maze's, line for line, and the 3D ones
-  game.py      the rules: levels, the trap door, the monster, catching, finishing
+  maze.py      the mazes, made the way Endless Maze makes them, plus loops
+  game.py      the rules: levels, Start, the monster, catching, finishing
   app.py       serving the pages, /api/summary, /ws, the clock that runs the game
 specs/         the rules, the messages between browser and server, deployment
 tests/         pytest for the server, Deno for the movement code

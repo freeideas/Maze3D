@@ -114,6 +114,8 @@ export function view3d(/** @type {HTMLCanvasElement} */ canvas) {
   scene.add(monster);
 
   let level = new THREE.Group();
+  /** @type {THREE.Mesh | null} */
+  let goal = null;
   scene.add(level);
   /** @type {Map<string, THREE.Group>} */
   const others = new Map();
@@ -168,10 +170,18 @@ export function view3d(/** @type {HTMLCanvasElement} */ canvas) {
     ceiling.position.set(n * CELL / 2, WALL, n * CELL / 2);
     level.add(ceiling);
 
-    // The goal glows, like the square in the 2D maze.
+    // The goal: a glowing yellow star, turning slowly, as on the map.
     const gx = (maze.exit % n + 0.5) * CELL, gz = (Math.floor(maze.exit / n) + 0.5) * CELL;
-    const goal = new THREE.Mesh(new THREE.BoxGeometry(CELL * 0.6, 0.06, CELL * 0.6), new THREE.MeshBasicMaterial({ color: 0xffd76a }));
-    goal.position.set(gx, 0.03, gz);
+    const shape = new THREE.Shape();
+    for (let i = 0; i < 10; i++) {
+      const a = Math.PI / 2 + i * Math.PI / 5, d = i % 2 ? 0.22 : 0.5;
+      if (i) shape.lineTo(Math.cos(a) * d, Math.sin(a) * d);
+      else shape.moveTo(Math.cos(a) * d, Math.sin(a) * d);
+    }
+    const starGeometry = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.03, bevelSegments: 2 });
+    starGeometry.center();
+    goal = new THREE.Mesh(starGeometry, new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xffb820, emissiveIntensity: 1.2, metalness: 0.3, roughness: 0.35 }));
+    goal.position.set(gx, 1.1, gz);
     level.add(goal);
     const goalLight = new THREE.PointLight(0xffd76a, 8, CELL * 3, 1.5);
     goalLight.position.set(gx, 1, gz);
@@ -190,14 +200,19 @@ export function view3d(/** @type {HTMLCanvasElement} */ canvas) {
 
   /**
    * Draw one frame.
-   * @param {{ x: number, y: number, yaw: number, bob: number }} me
+   * @param {{ x: number, y: number, yaw: number, bob: number, lift: number }} me `lift` 0 is at eye
+   *   level, 1 is high above the maze looking down (the camera swoops between them)
    * @param {{ x: number, y: number, h: number } | null} it the monster
    * @param {{ id: string, name: string, x: number, y: number, h: number }[]} people other players
    */
   function draw(me, it, people) {
     resize();
-    camera.position.set(me.x * CELL, EYE + me.bob, me.y * CELL);
+    const lift = me.lift * me.lift * (3 - 2 * me.lift); // ease in and out
+    camera.position.set(me.x * CELL, EYE + me.bob + lift * 14, me.y * CELL);
     camera.rotation.y = me.yaw;
+    camera.rotation.x = -lift * Math.PI / 2 * 0.95;
+    /** @type {THREE.FogExp2} */ (scene.fog).density = 0.09 * (1 - lift * 0.8);
+    if (goal) goal.rotation.y = performance.now() / 900;
     monster.visible = !!it;
     if (it) {
       monster.position.set(it.x * CELL, Math.abs(Math.sin(performance.now() / 180)) * 0.08, it.y * CELL);

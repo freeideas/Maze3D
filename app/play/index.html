@@ -3,42 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Endless Maze</title>
+<title>Monster Maze</title>
 <link rel="stylesheet" href="play.css">
 </head>
 <body>
-<!-- The 2D start: made to look just like Endless Maze (EveryGame, examples/maze/). -->
-<main id="flat">
-  <h1>Endless Maze</h1>
-  <p class="lead">Run from the top left to the glowing square. Each level is bigger.</p>
-  <div class="bar">
+<section id="deep">
+  <canvas id="view" aria-label="The maze, seen through your eyes"></canvas>
+  <div id="overview" hidden>
+    <canvas id="map" aria-label="Map of the maze"></canvas>
+    <p class="legend">
+      <span class="you">&#9650; you</span>
+      <span class="others">&#9679; other players</span>
+      <span class="monster">&#9679; monster</span>
+      <span class="goal">&#9733; goal</span>
+    </p>
+  </div>
+  <div class="hud">
     <span id="level"></span>
     <span id="clock"></span>
-  </div>
-  <canvas id="board" width="560" height="560" aria-label="The maze"></canvas>
-  <p id="note"></p>
-  <div class="pad" aria-label="Arrow buttons">
-    <button class="up" data-move="U" aria-label="Up">&uarr;</button>
-    <button class="left" data-move="L" aria-label="Left">&larr;</button>
-    <button class="down" data-move="D" aria-label="Down">&darr;</button>
-    <button class="right" data-move="R" aria-label="Right">&rarr;</button>
-  </div>
-  <footer>Arrow keys or W, A, S, D work too, and you can swipe on the maze.</footer>
-</main>
-
-<!-- The 3D maze, after the trap door. -->
-<section id="deep" hidden>
-  <canvas id="view" aria-label="The maze, seen through your eyes"></canvas>
-  <div class="hud">
-    <span id="level3"></span>
-    <span id="clock3"></span>
     <span id="here"></span>
     <button id="mute" aria-label="Sound on or off">&#128266;</button>
   </div>
-  <p class="hint" id="hint">Swipe or use the arrow keys: up goes forward, left and right turn and go, down turns around. Tap or press space to stop. Headphones help: the monster is muffled when it is behind you.</p>
+  <p class="hint" id="hint">Up goes the way your arrow points. Left and right turn and go, down turns around. Space or a tap stops and shows the map.</p>
 </section>
 
-<div id="cover" hidden><p id="message"></p></div>
+<div id="cover">
+  <div id="card">
+    <p id="message"></p>
+    <p id="detail"></p>
+    <button id="start" hidden>Start</button>
+    <p id="keys" hidden>Enter or space starts. Wear headphones: you can hear where the monster is.</p>
+  </div>
+</div>
 <script type="module" src="play.js"></script>
 </body>
 </html>

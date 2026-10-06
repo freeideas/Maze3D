@@ -1,10 +1,10 @@
 """The rules of Monster Maze, kept free of networking so tests can drive them with a made-up clock.
 
-Every level is a room: everyone on level 7 shares level 7's 3D maze and its one monster. A player
-starts each attempt in Endless Maze's 2D maze; after two moves they fall through a trap door into the
-3D maze, at the same start as everyone else. The monster starts at the goal. If it touches a player,
-that player starts the level over from the 2D maze with the clock at zero, and the monster goes back
-to the goal. Reaching the goal finishes the level and moves the player up one.
+Every level is a room: everyone on level 7 shares level 7's maze and its one monster. An attempt
+starts when the player presses Start: the clock starts, they stand at the start cell with everyone
+else, and the monster can see them. The monster starts at the goal. If it touches a player, that
+player is back at the Start screen with the clock at zero, and the monster goes back to the goal.
+Reaching the goal finishes the level and moves the player up one.
 
 Positions are in cells: the middle of cell (column c, row r) is (c + 0.5, r + 0.5). Players and the
 monster only ever move along the lines joining the middles of open neighbouring cells. Headings are
@@ -21,13 +21,12 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Callable
 
-from .maze import DOWN, LEFT, MOVES, RIGHT, UP, Maze, make_maze, make_maze_3d, step
+from .maze import DOWN, LEFT, MOVES, RIGHT, UP, Maze, make_maze, step
 
 PLAYER_SPEED = 3.0  # cells per second
 MONSTER_SPEED = 2.7  # a little slower than players
 CATCH_DISTANCE = 0.55  # the monster touches a player when their middles are this close
 GOAL_DISTANCE = 0.3
-FALL_SECONDS = 2.5  # "You just fell through a trap door!"
 CAUGHT_SECONDS = 2.0
 FINISHED_SECONDS = 3.0
 MONSTER_REST = 1.5  # after going back to the goal, the monster waits this long
@@ -102,11 +101,9 @@ class Player:
     name: str
     send: Callable[[dict], None]
     level: int = 1
-    phase: str = "2d"  # 2d, falling, 3d, caught or finished
+    phase: str = "ready"  # ready (the Start screen), play, caught or finished
     phase_until: float = 0.0
-    cell2d: int = 0
-    moves2d: int = 0
-    started: float | None = None  # when this attempt's clock started: the first 2D move
+    started: float | None = None  # when this attempt's clock started: pressing Start
     x: float = 0.5
     y: float = 0.5
     heading: int = 1
@@ -127,14 +124,13 @@ class Monster:
 @dataclass
 class Room:
     level: int
-    maze2d: Maze
-    maze3d: Maze
+    maze: Maze
     monster: Monster
     players: dict[str, Player] = field(default_factory=dict)
 
     def monster_home(self, now: float) -> None:
-        x, y = middle(self.maze3d, self.maze3d.exit)
-        self.monster = Monster(x, y, self.maze3d.exit, rest_until=now + MONSTER_REST)
+        x, y = middle(self.maze, self.maze.exit)
+        self.monster = Monster(x, y, self.maze.exit, rest_until=now + MONSTER_REST)
 
 
 class Store:
@@ -158,9 +154,9 @@ class Game:
 
     def room(self, level: int) -> Room:
         if level not in self.rooms:
-            maze3d = make_maze_3d(level)
-            x, y = middle(maze3d, maze3d.exit)
-            self.rooms[level] = Room(level, make_maze(level), maze3d, Monster(x, y, maze3d.exit))
+            maze = make_maze(level)
+            x, y = middle(maze, maze.exit)
+            self.rooms[level] = Room(level, maze, Monster(x, y, maze.exit))
         return self.rooms[level]
 
     def join(self, id: str, guest: str, send: Callable[[dict], None], now: float) -> Player:
@@ -189,36 +185,32 @@ class Game:
         room = self.room(level)
         room.players[player.id] = player
         best = self.store.best.get(str(level))
-        player.send({"t": "level", "level": level, "maze2d": room.maze2d.to_json(), "maze3d": room.maze3d.to_json(),
-                     "best": best})
+        player.send({"t": "level", "level": level, "maze": room.maze.to_json(), "best": best})
         self.restart(player)
 
     def restart(self, player: Player) -> None:
-        """Back to the start of the 2D maze, with the clock at zero."""
-        player.phase, player.cell2d, player.moves2d, player.started = "2d", 0, 0, None
-        player.send({"t": "phase", "phase": "2d", "cell": 0})
+        """Back to the Start screen, with the clock at zero."""
+        player.phase, player.started = "ready", None
+        player.send({"t": "phase", "phase": "ready"})
 
     # --- what players do -----------------------------------------------------------------------
 
-    def move2d(self, player: Player, letter: str, now: float) -> None:
-        if player.phase != "2d":
+    def start(self, player: Player, now: float) -> None:
+        """Start pressed: the clock starts, and everyone starts on the same cell, facing an open way."""
+        if player.phase != "ready":
             return
-        room = self.rooms[player.level]
-        to = step(room.maze2d, player.cell2d, letter)
-        if to == player.cell2d:
-            return
-        if player.started is None:
-            player.started = now
-        player.cell2d, player.moves2d = to, player.moves2d + 1
-        if player.moves2d >= 2:
-            player.phase, player.phase_until = "falling", now + FALL_SECONDS
-            player.send({"t": "phase", "phase": "falling", "seconds": FALL_SECONDS})
+        maze = self.rooms[player.level].maze
+        player.phase, player.started = "play", now
+        player.x, player.y = middle(maze, maze.start)
+        player.heading = next(h for h in (1, 2, 0, 3) if maze.open[maze.start] & SIDES[h])
+        player.budget, player.reported = 0.5, now
+        player.send({"t": "phase", "phase": "play", "x": player.x, "y": player.y, "h": player.heading})
 
     def report(self, player: Player, x: float, y: float, heading: int, now: float) -> None:
         """A browser says where its player is now; accept it, or put the player back where they were."""
-        if player.phase != "3d":
+        if player.phase != "play":
             return
-        maze = self.rooms[player.level].maze3d
+        maze = self.rooms[player.level].maze
         player.budget = min(MAX_BUDGET, player.budget + PLAYER_SPEED * SPEED_SLACK * (now - player.reported))
         player.reported = now
         distance = abs(x - player.x) + abs(y - player.y)
@@ -259,10 +251,8 @@ class Game:
 
     def tick(self, now: float, dt: float) -> None:
         for player in list(self.players.values()):
-            if player.phase in ("falling", "caught", "finished") and now >= player.phase_until:
-                if player.phase == "falling":
-                    self.land(player, now)
-                elif player.phase == "caught":
+            if player.phase in ("caught", "finished") and now >= player.phase_until:
+                if player.phase == "caught":
                     self.restart(player)
                 else:
                     self.enter(player, player.level + 1, now)
@@ -270,27 +260,18 @@ class Game:
             self.move_monster(room, now, dt)
             m = room.monster
             for player in list(room.players.values()):
-                if player.phase == "3d" and math.hypot(player.x - m.x, player.y - m.y) < CATCH_DISTANCE:
+                if player.phase == "play" and math.hypot(player.x - m.x, player.y - m.y) < CATCH_DISTANCE:
                     player.phase, player.phase_until = "caught", now + CAUGHT_SECONDS
                     player.send({"t": "phase", "phase": "caught", "seconds": CAUGHT_SECONDS})
                     room.monster_home(now)
                     m = room.monster
 
-    def land(self, player: Player, now: float) -> None:
-        """The end of the fall: everyone lands on the same start cell of the 3D maze."""
-        maze = self.rooms[player.level].maze3d
-        player.phase = "3d"
-        player.x, player.y = middle(maze, maze.start)
-        player.heading = next(h for h in (1, 2, 0, 3) if maze.open[maze.start] & SIDES[h])
-        player.budget, player.reported = 0.5, now
-        player.send({"t": "phase", "phase": "3d", "x": player.x, "y": player.y, "h": player.heading})
-
     def move_monster(self, room: Room, now: float, dt: float) -> None:
         """The monster sees through walls and heads for the nearest player, but it is not smart: at
         every cell it takes whichever open way leads closest to that player in a straight line, and it
         never turns back unless it is in a dead end."""
-        maze, m = room.maze3d, room.monster
-        prey = [p for p in room.players.values() if p.phase == "3d"]
+        maze, m = room.maze, room.monster
+        prey = [p for p in room.players.values() if p.phase == "play"]
         if not prey:
             if m.cell != maze.exit or m.target is not None:
                 room.monster_home(now)
@@ -330,7 +311,7 @@ class Game:
     def broadcast(self, now: float) -> None:
         for room in self.rooms.values():
             seen = [{"id": p.id, "name": p.name, "x": round(p.x, 3), "y": round(p.y, 3), "h": p.heading}
-                    for p in room.players.values() if p.phase == "3d"]
+                    for p in room.players.values() if p.phase == "play"]
             m = room.monster
             for player in room.players.values():
                 clock = None if player.started is None or player.phase == "finished" else round((now - player.started) * 1000)

@@ -1,7 +1,8 @@
 // Every sound in Monster Maze, made on the spot with the browser's Web Audio (no sound files).
 //
-// The monster is heard where it is. Left and right come from the browser's 3D sound (an "HRTF"
-// panner, which imitates how a head shapes sound for each ear). Front and back are hard for that to
+// The monster breathes, growls, roars when close and thumps as it walks, all heard where it is.
+// Left and right come from the browser's 3D sound (an "HRTF" panner, which imitates how a head
+// shapes sound for each ear). Front and back are hard for that to
 // tell apart, so we copy what the outer ear does: a sound behind you loses its high pitches. The
 // monster sounds crisp in front of you and muffled behind you. A heartbeat speeds up as it nears.
 
@@ -13,6 +14,8 @@ let master;
 let monster = null;
 let muted = false;
 let nextStep = 0;
+let nextBreath = 0;
+let nextGrowl = 0;
 let nextBeat = 0;
 
 /** Start sound; browsers only allow it in answer to a key press or a touch. */
@@ -40,7 +43,7 @@ function noiseBuffer() {
   return buffer;
 }
 
-/** The monster's breathing growl, running all the time, heard through its 3D panner. */
+/** The monster's voice: everything it makes goes through here, then its front-or-back filter and its 3D panner. */
 function startMonster() {
   const c = /** @type {AudioContext} */ (ctx);
   const panner = new PannerNode(c, {
@@ -49,32 +52,80 @@ function startMonster() {
   const filter = new BiquadFilterNode(c, { type: "lowpass", frequency: 6000, Q: 0.7 });
   const voice = new GainNode(c, { gain: 0 });
   voice.connect(filter).connect(panner).connect(master);
-
-  // A low growl: two rough tones a fifth apart, wobbling.
-  const growl = new GainNode(c, { gain: 0.22 });
-  for (const f of [46, 69]) {
-    const osc = new OscillatorNode(c, { type: "sawtooth", frequency: f });
-    osc.connect(growl);
-    osc.start();
-  }
-  const wobble = new OscillatorNode(c, { type: "sine", frequency: 5.5 });
-  const depth = new GainNode(c, { gain: 0.12 });
-  wobble.connect(depth).connect(growl.gain);
-  wobble.start();
-  growl.connect(voice);
-
-  // Raspy breath: hissing noise swelling in and out, high enough for the ears to place it.
-  const noise = new AudioBufferSourceNode(c, { buffer: noiseBuffer(), loop: true });
-  const rasp = new BiquadFilterNode(c, { type: "bandpass", frequency: 1800, Q: 1.2 });
-  const breath = new GainNode(c, { gain: 0.15 });
-  const lungs = new OscillatorNode(c, { type: "sine", frequency: 0.45 });
-  const lungDepth = new GainNode(c, { gain: 0.14 });
-  lungs.connect(lungDepth).connect(breath.gain);
-  noise.connect(rasp).connect(breath).connect(voice);
-  noise.start();
-  lungs.start();
-
   monster = { panner, filter, voice };
+}
+
+/** A curve that clips hard, for a rough throat. */
+const rough = (() => {
+  const curve = new Float32Array(1024);
+  for (let i = 0; i < curve.length; i++) curve[i] = Math.tanh(((i / 1023) * 2 - 1) * 6);
+  return curve;
+})();
+
+const random = (/** @type {number} */ low, /** @type {number} */ high) => low + Math.random() * (high - low);
+
+/**
+ * A growl: a low, rattling voice shaped by a throat (three "formant" filters, the resonances that
+ * make vowels), sliding from "wor" to "ah" and back, with a hiss of breath on top.
+ * @param {number} pitch base pitch in Hz @param {number} length seconds @param {number} level
+ */
+function growl(pitch, length, level) {
+  const c = /** @type {AudioContext} */ (ctx);
+  const out = /** @type {any} */ (monster).voice;
+  const t = c.currentTime;
+  const env = new GainNode(c, { gain: 0 });
+  env.gain.setValueAtTime(0, t);
+  env.gain.linearRampToValueAtTime(level, t + 0.1);
+  env.gain.setValueAtTime(level, t + length * 0.6);
+  env.gain.exponentialRampToValueAtTime(0.001, t + length);
+  env.connect(out);
+
+  const throat = new OscillatorNode(c, { type: "sawtooth", frequency: pitch * 0.85 });
+  throat.frequency.linearRampToValueAtTime(pitch * 1.15, t + length * 0.35);
+  throat.frequency.linearRampToValueAtTime(pitch * 0.8, t + length);
+  // The rattle: the pitch shaken quickly and unevenly.
+  const rattle = new OscillatorNode(c, { type: "square", frequency: random(22, 34) });
+  const rattleDepth = new GainNode(c, { gain: pitch * 0.35 });
+  rattle.connect(rattleDepth).connect(throat.frequency);
+  const shaper = new WaveShaperNode(c, { curve: rough });
+  const voiced = new GainNode(c, { gain: 0.5 });
+  throat.connect(shaper).connect(voiced);
+
+  const noise = new AudioBufferSourceNode(c, { buffer: noiseBuffer() });
+  const breath = new GainNode(c, { gain: 0.35 });
+  noise.connect(breath);
+
+  for (const [f0, f1, q, gain] of [[300, 650, 5, 1], [800, 1150, 6, 0.6], [2400, 2700, 8, 0.3]]) {
+    const formant = new BiquadFilterNode(c, { type: "bandpass", frequency: f0, Q: q });
+    formant.frequency.linearRampToValueAtTime(f1, t + length * 0.4);
+    formant.frequency.linearRampToValueAtTime(f0, t + length);
+    const g = new GainNode(c, { gain });
+    voiced.connect(formant);
+    breath.connect(formant);
+    formant.connect(g).connect(env);
+  }
+  for (const node of [throat, rattle, noise]) {
+    node.start(t);
+    node.stop(t + length + 0.05);
+  }
+}
+
+/** One breath, in then out: hoarse, wet and slow. Quiet, but always there, so you can tell where it is. */
+function breathe() {
+  const c = /** @type {AudioContext} */ (ctx);
+  const out = /** @type {any} */ (monster).voice;
+  const t = c.currentTime;
+  for (const [start, length, freq, level] of [[0, 0.55, 1400, 0.25], [0.65, 0.8, 700, 0.4]]) {
+    const noise = new AudioBufferSourceNode(c, { buffer: noiseBuffer() });
+    const band = new BiquadFilterNode(c, { type: "bandpass", frequency: freq, Q: 1.5 });
+    const g = new GainNode(c, { gain: 0 });
+    g.gain.setValueAtTime(0, t + start);
+    g.gain.linearRampToValueAtTime(level, t + start + length * 0.4);
+    g.gain.linearRampToValueAtTime(0, t + start + length);
+    noise.connect(band).connect(g).connect(out);
+    noise.start(t + start);
+    noise.stop(t + start + length + 0.05);
+  }
 }
 
 /** A heavy footstep, at the monster. */
@@ -158,6 +209,16 @@ export function update(me, it) {
   const cutoff = 600 * Math.pow(8000 / 600, (ahead + 1) / 2);
   m.filter.frequency.setTargetAtTime(cutoff, t, 0.05);
 
+  // Breathing all the time; growls now and then, more often and louder when it is close.
+  if (t >= nextBreath) {
+    breathe();
+    nextBreath = t + random(1.5, 1.9);
+  }
+  if (t >= nextGrowl) {
+    if (distance < 3.5) growl(random(95, 130), random(1.2, 1.7), 0.9); // a roar
+    else growl(random(55, 85), random(0.7, 1.3), 0.6);
+    nextGrowl = t + (distance < 6 ? random(1.2, 2.4) : random(2.5, 5));
+  }
   if (it.moving && t >= nextStep) {
     thump();
     nextStep = t + 0.36;
@@ -170,7 +231,7 @@ export function update(me, it) {
   }
 }
 
-/** A short sound for something that happened: step, fall, caught, finished. @param {string} what */
+/** A short sound for something that happened: caught or finished. @param {string} what */
 export function play(what) {
   if (!ctx || ctx.state !== "running") return;
   const c = ctx;
@@ -196,11 +257,6 @@ export function play(what) {
     src.start(t);
     src.stop(t + length);
   };
-  if (what === "step") tone("triangle", 660, 520, 0, 0.08, 0.15);
-  if (what === "fall") {
-    tone("square", 300, 30, 0.1, 1.8, 0.18);
-    hiss(3000, 200, 2, 0.5);
-  }
   if (what === "caught") {
     tone("sawtooth", 120, 35, 0, 0.9, 0.6);
     tone("sawtooth", 180, 50, 0, 0.7, 0.4);
