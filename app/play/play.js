@@ -42,7 +42,7 @@ function connect() {
   };
   socket.onmessage = (event) => receive(JSON.parse(event.data));
   socket.onclose = () => {
-    $("note").textContent = "Lost the connection; trying again…";
+    $("note").textContent = "Lost the connection; trying again...";
     setTimeout(connect, 2000);
   };
 }
