@@ -1,0 +1,24 @@
+# systemd unit for Monster Maze at https://maze3d.endlessmind.com/ on contabix (ordinarydata).
+# Install: sudo cp deploy/maze3d.service /etc/systemd/system/ && sudo systemctl enable --now maze3d
+# Caddy relays maze3d.endlessmind.com to 127.0.0.1:8770 (deploy/Caddyfile.snippet).
+
+[Unit]
+Description=Monster Maze, a multiplayer maze game with a monster
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ace
+Group=ace
+WorkingDirectory=/home/ace/Desktop/prjx/Maze3D
+Environment=PATH=/home/ace/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PORT=8770
+Environment=DATA_ROOT=/home/ace/Desktop/prjx/Maze3D/data
+MemoryMax=512M
+ExecStart=/home/ace/.local/bin/uv run maze3d-server
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

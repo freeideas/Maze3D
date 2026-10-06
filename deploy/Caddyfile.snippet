@@ -1,0 +1,11 @@
+	# --- Monster Maze (maze3d.endlessmind.com) ---------------------------------
+	# systemd unit `maze3d` -> 127.0.0.1:8770 (~/Desktop/prjx/Maze3D,
+	# specs/deployment.md). The app serves its pages and its WebSocket (/ws)
+	# itself; Caddy only forwards. Also add maze3d.endlessmind.com to the
+	# @allowed_domains list that decides which names get certificates.
+	@maze3d host maze3d.endlessmind.com
+	handle @maze3d {
+		reverse_proxy 127.0.0.1:8770 {
+			header_up X-Real-IP {remote_host}
+		}
+	}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monster Maze</title>
+<meta name="description" content="A fast maze game for several players at once, with a monster that can hear you coming. Play free in your browser.">
+<link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+<main>
+  <h1>Monster Maze</h1>
+  <p class="lead">Run the maze. Find the glowing square. Something down there is looking for you.</p>
+  <p><a class="play" href="../play/">Play</a></p>
+
+  <h2>How it works</h2>
+  <ul>
+    <li>Other players are in the maze with you. You can run right through each other.</li>
+    <li>The monster can't be passed. If it touches you, you start the level again and your clock goes back to zero.</li>
+    <li>It sees through walls, but it isn't clever. You are a little faster than it is.</li>
+    <li>Finish a level and you go up to the next, bigger one.</li>
+    <li><strong>Wear headphones.</strong> You can hear where the monster is: left or right, and muffled when it is behind you.</li>
+  </ul>
+
+  <h2>Controls</h2>
+  <p>Arrow keys or W, A, S, D, or swipe anywhere. Once you are inside the maze, up always means straight ahead. Left and right turn you that way and keep going, and down turns you around. Tap or press space to stop.</p>
+
+  <h2>Best times</h2>
+  <p id="playing"></p>
+  <table id="best" hidden>
+    <thead><tr><th>Level</th><th>Time</th><th>Who</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <p id="none">No one has finished a level yet. Be the first.</p>
+
+  <footer>A game for <a href="https://endlessmind.com/">Endless Mind</a>. You play as a guest; your progress belongs to this browser.</footer>
+</main>
+<script type="module" src="welcome.js"></script>
+</body>
+</html>

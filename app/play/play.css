@@ -1,0 +1,41 @@
+/* The 2D part copies Endless Maze's look (EveryGame, examples/maze/index.html). */
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; min-height: 100vh; touch-action: manipulation; color: #e9f1ff; background: #0d1420; font: 18px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 40rem; margin: 0 auto; padding: 1.2rem 1rem 3rem; }
+h1 { margin: 0; font-size: 1.9rem; }
+.lead { color: #9fb2cc; margin: .2rem 0 .8rem; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .6rem 0; }
+#level { font-size: 1.2rem; font-weight: 700; }
+#clock { font-variant-numeric: tabular-nums; color: #9fb2cc; }
+#board { display: block; width: 100%; max-width: 560px; aspect-ratio: 1; margin: .4rem auto; touch-action: none; border-radius: 8px; background: #111b2b; }
+#note { min-height: 1.6em; text-align: center; color: #ffd76a; font-weight: 600; }
+.pad { display: grid; grid-template-columns: repeat(3, 4.6rem); grid-template-rows: repeat(2, 4rem); gap: .5rem; justify-content: center; margin: .6rem 0;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.pad button { font-size: 1.6rem; border-radius: 12px; border: 1px solid #ffffff30; background: #ffffff12; color: inherit; cursor: pointer; }
+.pad button:active { background: #ffffff30; }
+.pad .up { grid-column: 2; grid-row: 1; }
+.pad .left { grid-column: 1; grid-row: 2; }
+.pad .down { grid-column: 2; grid-row: 2; }
+.pad .right { grid-column: 3; grid-row: 2; }
+footer { margin-top: 1.5rem; color: #7d8ea8; font-size: .9rem; }
+
+/* The 3D maze fills the screen; a drag anywhere steers. */
+#deep { position: fixed; inset: 0; background: #05070c; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#view { display: block; width: 100%; height: 100%; }
+.hud { position: absolute; top: 0; left: 0; right: 0; display: flex; gap: 1rem; align-items: center; padding: max(.6rem, env(safe-area-inset-top)) 1rem .6rem;
+  background: linear-gradient(#000a, #0000); font-variant-numeric: tabular-nums; pointer-events: none; }
+#level3 { font-weight: 700; }
+#here { color: #9fb2cc; margin-left: auto; }
+#mute { pointer-events: auto; font-size: 1.2rem; border: 1px solid #ffffff40; border-radius: 8px; background: #0006; color: inherit; padding: .1rem .5rem; cursor: pointer; }
+.hint { position: absolute; left: 1rem; right: 1rem; bottom: max(1rem, env(safe-area-inset-bottom)); margin: 0 auto; max-width: 34rem; padding: .6rem .9rem;
+  border-radius: 10px; background: #000a; color: #c9d8ee; font-size: .9rem; text-align: center; pointer-events: none; transition: opacity 1s; }
+
+/* Messages over everything: the trap door, being caught, finishing. */
+#cover { position: fixed; inset: 0; display: grid; place-items: center; padding: 1.5rem; background: #000; z-index: 5; }
+#cover.caught { background: #3a0008; }
+#cover.finished { background: #0d1420ee; }
+#message { margin: 0; max-width: 30rem; font-size: clamp(1.4rem, 5vw, 2.2rem); font-weight: 700; text-align: center; animation: drop .5s ease-out; }
+#message small { display: block; margin-top: .6rem; font-size: 1rem; font-weight: 400; color: #9fb2cc; }
+@keyframes drop { from { opacity: 0; transform: translateY(-1rem); } to { opacity: 1; transform: none; } }
