@@ -1,6 +1,7 @@
 // The map: the whole maze from above, drawn the way Endless Maze draws its mazes, with you as an
-// arrow pointing the way you face (up on the controls is where it points), other players as white
-// dots, the monster as a pulsing red glow, and the goal as a yellow star.
+// arrow, other players as white dots, the monster as a pulsing red glow, and the goal as a yellow
+// star. The map turns with you so that your arrow always points up: up on the map is straight ahead,
+// left is your left, right is your right, just like the controls.
 
 const UP = 1, RIGHT = 2, DOWN = 4, LEFT = 8;
 
@@ -25,10 +26,11 @@ function glow(g, /** @type {number} */ x, /** @type {number} */ y, /** @type {nu
 }
 
 /**
- * Draw the map on `canvas`. Positions are in cells; `h` headings are 0 up, 1 right, 2 down, 3 left.
+ * Draw the map on `canvas`. Positions are in cells; `h` headings are 0 up, 1 right, 2 down, 3 left;
+ * `yaw` is the way the 3D view faces as it turns (play.js), which the map follows.
  * @param {HTMLCanvasElement} canvas
  * @param {{ size: number, open: number[], exit: number }} maze
- * @param {{ x: number, y: number, h: number }} me
+ * @param {{ x: number, y: number, h: number, yaw: number }} me
  * @param {{ x: number, y: number } | null} monster
  * @param {{ name: string, x: number, y: number }[]} people
  */
@@ -40,15 +42,32 @@ export function drawMap(canvas, maze, me, monster, people) {
   const unit = px / n;
   const at = (/** @type {number} */ v) => v * unit;
   g.clearRect(0, 0, px, px);
+  // Turn the whole map about its middle, shrinking it while it is part way round so it still fits.
+  const fit = 1 / (Math.abs(Math.cos(me.yaw)) + Math.abs(Math.sin(me.yaw)));
+  g.save();
+  g.translate(px / 2, px / 2);
+  g.rotate(me.yaw);
+  g.scale(fit, fit);
+  g.translate(-px / 2, -px / 2);
+  /** Draw something upright at (x, y), however the map is turned. */
+  const upright = (/** @type {number} */ x, /** @type {number} */ y, /** @type {() => void} */ paint) => {
+    g.save();
+    g.translate(x, y);
+    g.rotate(-me.yaw);
+    paint();
+    g.restore();
+  };
   g.fillStyle = "#111b2b";
   g.fillRect(0, 0, px, px);
 
   // The goal: a glowing star.
   const gx = at(maze.exit % n + .5), gy = at(Math.floor(maze.exit / n) + .5);
   glow(g, gx, gy, unit * .8, "#ffd76a99");
-  g.fillStyle = "#ffd76a";
-  star(g, gx, gy, unit * .38);
-  g.fill();
+  upright(gx, gy, () => {
+    g.fillStyle = "#ffd76a";
+    star(g, 0, 0, unit * .38);
+    g.fill();
+  });
 
   g.strokeStyle = "#c9d8ee";
   g.lineWidth = Math.max(2, unit / 8);
@@ -72,8 +91,10 @@ export function drawMap(canvas, maze, me, monster, people) {
     g.beginPath();
     g.arc(at(p.x), at(p.y), unit * .2, 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = "#f2f2f2cc";
-    g.fillText(p.name, at(p.x), at(p.y) - unit * .32);
+    upright(at(p.x), at(p.y), () => {
+      g.fillStyle = "#f2f2f2cc";
+      g.fillText(p.name, 0, -unit * .32);
+    });
   }
 
   // The monster: a red dot with a pulsing glow.
@@ -86,7 +107,7 @@ export function drawMap(canvas, maze, me, monster, people) {
     g.fill();
   }
 
-  // You: a bright arrow pointing the way you face.
+  // You: a bright arrow pointing the way you face, which (once a turn has finished) is straight up.
   glow(g, at(me.x), at(me.y), unit * .6, "#6ee7ff66");
   g.save();
   g.translate(at(me.x), at(me.y));
@@ -99,5 +120,6 @@ export function drawMap(canvas, maze, me, monster, people) {
   g.lineTo(-unit * .28, unit * .3);
   g.closePath();
   g.fill();
+  g.restore();
   g.restore();
 }

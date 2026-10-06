@@ -15,10 +15,10 @@ An attempt goes:
 
 ## The map
 
-The map is drawn the way Endless Maze draws its mazes, always the same way up. On it:
+The map is drawn the way Endless Maze draws its mazes, and it turns with the player so that their arrow always points up: up on the map is straight ahead, and left and right on the map are the player's own left and right, just like the controls. It turns smoothly with every turn, shrinking a little part way round so it still fits. On it:
 
-- **You:** a bright cyan arrow, pointing the way you face. Up on the controls is wherever the arrow points.
-- **Other players:** white dots with their names.
+- **You:** a bright cyan arrow, pointing the way you face, which is up.
+- **Other players:** white dots with their names, written upright however the map is turned.
 - **The monster:** a red dot with a pulsing red glow.
 - **The goal:** a glowing yellow star.
 

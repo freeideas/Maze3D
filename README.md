@@ -2,7 +2,7 @@
 
 A fast maze game for several players at once, at **<https://maze3d.endlessmind.com/>**.
 
-Press Start and you see the whole level from above, drawn like [Endless Maze](https://maze.endlessmind.com/): you are an arrow, other players are white dots, the monster is a red glow, and the goal is a yellow star. The clock is already running and the monster can already see you. Your first move swoops you down into the maze, seen through your own eyes. Reach the star to go up a level. If the monster touches you, you start the level over, with the clock back at zero.
+Press Start and you see the whole level from above, drawn like [Endless Maze](https://maze.endlessmind.com/): you are an arrow that always points up (the map turns with you), other players are white dots, the monster is a red glow, and the goal is a yellow star. The clock is already running and the monster can already see you. Your first move swoops you down into the maze, seen through your own eyes. Reach the star to go up a level. If the monster touches you, you start the level over, with the clock back at zero.
 
 - **Other players** share your level's maze. You can run right through each other.
 - **The monster** starts at the goal and comes for the nearest player. It sees through walls, but it is not clever, and you are a little faster than it is. No one can pass it.

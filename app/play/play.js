@@ -239,7 +239,7 @@ function frame(/** @type {number} */ now) {
     const it = phase === "play" && others ? others.monster : null;
     const bob = self.moving ? Math.sin(now / 95) * 0.04 * (1 - lift) : 0;
     view.draw({ x: self.x, y: self.y, yaw, bob, lift }, it ? { ...it, h: 0 } : null, others?.players ?? []);
-    if (mapOpen && phase === "play") drawMap(mapCanvas, maze, self, it, others?.players ?? []);
+    if (mapOpen && phase === "play") drawMap(mapCanvas, maze, { ...self, yaw }, it, others?.players ?? []);
     sound.update({ x: self.x, y: self.y, yaw }, it);
     const at = `${self.x.toFixed(3)},${self.y.toFixed(3)},${self.h}`;
     if (phase === "play" && at !== sentAt && now - lastSent > 66) {
