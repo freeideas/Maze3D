@@ -9,8 +9,8 @@ Check the checkout is clean, then `git pull --ff-only`. Page files (`app/`) are 
 ## Setting it up
 
 1. DNS (done 2026-10-07): an `A` record for `maze3d.endlessmind.com` -> `154.12.248.173`, not proxied, like `maze.endlessmind.com`. It was added through the Cloudflare API with the token at `passwords/cloudflare.com/api-token` in the machine's credential store (`~/creds`).
-2. `sudo cp deploy/maze3d.service /etc/systemd/system/ && sudo systemctl enable --now maze3d`
-3. Caddy: add the block in `deploy/Caddyfile.snippet` next to Endless Maze's, add `maze3d.endlessmind.com` to `@allowed_domains`, back up the Caddyfile first, then `sudo caddy validate --config /etc/caddy/Caddyfile` and `sudo systemctl reload caddy`.
+2. (done 2026-10-07) `sudo cp deploy/maze3d.service /etc/systemd/system/ && sudo systemctl enable --now maze3d`
+3. Caddy (done 2026-10-07; the backup is `/etc/caddy/Caddyfile.bak.<date>-maze3d`): add the block in `deploy/Caddyfile.snippet` next to Endless Maze's, add `maze3d.endlessmind.com` to `@allowed_domains`, back up the Caddyfile first, then `sudo caddy validate --config /etc/caddy/Caddyfile` and `sudo systemctl reload caddy`.
 
 ## Data
 
